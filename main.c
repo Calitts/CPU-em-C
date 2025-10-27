@@ -5,7 +5,7 @@
 
 #define NUMERO_REGISTRADORES_ESPECIAIS 6
 #define NUMERO_REGISTRADORES_GERAIS 5
-#define TAMANHO_MEMORIA 1<<20 // MEMORIA 1 MB
+#define TAMANHO_MEMORIA 1<<10 // MEMORIA 1 KB
 
 // REGISTRADORES
 typedef struct {
@@ -50,5 +50,7 @@ int main() {
     int memoria[TAMANHO_MEMORIA];
 
     // ENTRADA
+    
 
+    
 }
