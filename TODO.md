@@ -1,4 +1,2 @@
-- Adicionar Registradores
-- Adicionar ULA
-- Adicionar Memória
+- Adicionar Entrada e Saída
 - Adicionar Comandos Base (Assembly)
