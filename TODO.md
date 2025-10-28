@@ -1,2 +1,2 @@
-- Adicionar Entrada e Saída
-- Adicionar Comandos Base (Assembly)
+- Adicionar Comandos de Terminal e suas Funcionalidades
+- Adicionar Comandos do IAS
