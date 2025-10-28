@@ -6,7 +6,7 @@
 #define NUMERO_REGISTRADORES_ESPECIAIS 6
 #define NUMERO_REGISTRADORES_GERAIS 5
 #define TAMANHO_MEMORIA 1<<10 // MEMORIA 1 KB
-#define TAMANHO_ENTRADA_MAX 40
+#define TAMANHO_ENTRADA_MAX 100
 #define TAMANHO_PALAVRA_MAX 20
 
 // REGISTRADORES
@@ -75,6 +75,7 @@ int main() {
         printf(">>> ");
         fgets(entrada, TAMANHO_ENTRADA_MAX, stdin);
         posicao_entrada = 0;
+        // Remove whitespace do inicio do comando
         while (posicao_entrada < TAMANHO_ENTRADA_MAX) {
             if (entrada[posicao_entrada] != ' ') {
                 break;
@@ -102,6 +103,10 @@ int main() {
         while (quantidade_argumentos < TAMANHO_ENTRADA_MAX) {
             if (entrada[posicao_entrada] == '\0') {
                 break;
+            }
+            else if (entrada[posicao_entrada] == ' ') { // Remove whitespace dos argumentos
+                posicao_entrada++;
+                continue;
             }
             // Segundo loop for transcreve cada palavra da entrada em uma posição no vetor
             for (int k = 0; k < TAMANHO_PALAVRA_MAX; k++) {
