@@ -34,7 +34,7 @@ typedef struct computador_t {
     uint16_t mar; // Endereço de memória
     uint16_t ibr; // Endereço de instrução
     uint16_t ir; // Instrução
-    
+
     // ULA
     int16_t mbr; // Conteúdo da memória
     int16_t ac;	// Acumulador
@@ -45,42 +45,43 @@ typedef struct computador_t {
 } computador_t;
 
 // Executa e lê da memória
-void memoria_read(computador_t* computador) {
-    // TODO
+void memoria_leitura(computador_t* computador) {
+    computador->ibr = computador->memoria[computador->pc];
 }
 
 // Executa e escreve na memória
-void memoria_write(computador_t* computador, bool modificar_endereco) {
+void memoria_escrita(computador_t* computador, bool modificar_endereco) {
     if (modificar_endereco) {
-        // TODO: Write only operand endereco field
+        computador->memoria[computador->mar] = (computador->memoria[computador->mar] & 0xF000) | (computador->ac & 0x0FFF);
     }
     else {
-        // TODO
+        computador->memoria[computador->mar] = computador->ac;
     }
 }
 
 // Lê inteiro do usuario 
-void io_read(computador_t* computador) {
+void io_leitura(computador_t* computador) {
     printf("ENTRADA => ");
     scanf("%hd", &computador->ac);
 }
 
 // Imprime inteiro do usuario 
-void io_write(computador_t* computador) {
+void io_escrita(computador_t* computador) {
     printf("SAIDA => 0x%04hX\n", computador->ac);
 }
 
 int main(int argc, char* argv[]) {
     // Checa argumentos
     if (argc < 2) {
-        printf("O programa precisa de 2 argumentos.\n");
+        printf("Programa precisa de pelo menos 1 argumento.\n");
         return 1;
     }
 
     // Abre o arquivo
-    FILE* arquivo_entrada = fopen(argv[1], "r");
+    char* arquivo = argv[1];
+    FILE* arquivo_entrada = fopen(arquivo, "r");
     if (!arquivo_entrada) {
-        printf("Erro abrindo %s!\n", argv[1]);
+        printf("Erro abrindo %s!\n", arquivo);
         return 1;
     }
 
@@ -110,61 +111,65 @@ int main(int argc, char* argv[]) {
         uint16_t original_pc = computador.pc;
 
         // Ciclo de leitura
-        // TODO: Fetch instruction from memoria (like in IAS)
+        memoria_leitura(&computador);
 
         // Ciclo de decodificação
-        // TODO: Put instruction fields in registers
+        computador.ir = (computador.ibr >> 12);
+        computador.mar = (computador.ibr & 0xFFF);
+        computador.mbr = computador.memoria[computador.mar];
+        computador.pc++;
 
         // Executa ciclo
         switch (computador.ir) {
         case HALT:
-            // TODO
+            computador_halt = true;
             break;
         case LOAD_M:
-            // TODO
+            computador.ac = computador.mbr;
             break;
         case LOAD_MQ:
-            // TODO
+            computador.ac = computador.mq;
             break;
         case LOAD_MQ_M:
-            // TODO
+            computador.mq = computador.mbr;
             break;
         case STOR:
-            // TODO
+            memoria_escrita(&computador, false);
             break;
         case STA:
-            // TODO
+            memoria_escrita(&computador, true);
             break;
         case ADD:
-            // TODO
+            computador.ac = computador.ac + computador.mbr;
             break;
         case SUB:
-            // TODO
+            computador.ac = computador.ac - computador.mbr;
             break;
         case MUL:
-            // TODO
+            computador.mq = computador.mq * computador.mbr;
+            computador.ac = computador.mq;
             break;
         case DIV:
-            // TODO
+            computador.mq = computador.ac / computador.mbr;
+            computador.ac = computador.ac % computador.mbr;
             break;
         case JMP:
-            // TODO
+            computador.pc = computador.mar;
             break;
         case JZ:
-            // TODO
+            computador.pc = (computador.ac == 0) ? computador.mar : computador.pc;
             break;
         case JNZ:
-            // TODO
+            computador.pc = (computador.ac != 0) ? computador.mar : computador.pc;
             break;
         case JPOS:
-            // TODO
+            computador.pc = (computador.ac >= 0) ? computador.mar : computador.pc;
             break;
         case IN:
-            // TODO
+            io_leitura(&computador);
             break;
         case OUT:
-            // TODO
-            io_write(&computador);
+            io_escrita(&computador);
             break;
         default:
             printf("Instrucao invalida %04X!\n", computador.ibr);
@@ -174,6 +179,7 @@ int main(int argc, char* argv[]) {
 
         // Ciclo do Breakpoint 
         if (breakpoints[original_pc]) {
+        // if (1) {
             printf("<== Registradores ==>\n");
             printf("PC = 0x%04hX\n", original_pc);
             printf("PC+ = 0x%04hX\n", computador.pc);

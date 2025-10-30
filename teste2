@@ -1,0 +1,7 @@
+000 E000 IN # Le e n t r a d a do u s u a r i o
+001 4100 STOR M( temp ) # Guarda em temp 
+002 E000 IN # Le o u t r a e n t r a d a do u s u a r i o4 
+003 6100 ADD M( temp ) # Soma com temp
+004 F000 OUT # E s c r e v e na s a i d a do u s u a r i o
+005 0000 HALT # F i n a l i z a
+100 0000 @ temp # V a r i a v e l t e m p o r a r i a
