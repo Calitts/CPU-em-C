@@ -67,7 +67,7 @@ void io_leitura(computador_t* computador) {
 
 // Imprime inteiro do usuario 
 void io_escrita(computador_t* computador) {
-    printf("SAIDA => 0x%04hX\n", computador->ac);
+    printf("SAIDA => %hd\n", computador->ac);
 }
 
 int main(int argc, char* argv[]) {
