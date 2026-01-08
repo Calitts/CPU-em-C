@@ -4,6 +4,9 @@
 #include <string.h>
 #include <stdbool.h>
 
+//  Tamanho de memoria (16KB) 
+#define TAMANHO_MEMORIA 16<<10
+
 // Intruções
 #define JMP_I           (0x0)
 #define JEQ_I           (0x1)
@@ -25,6 +28,31 @@
 #define PUSH            (0xE)
 #define POP             (0xF)
 #define HALT            (0xF)
+
+// Definição de registradores e memória
+typedef struct cpu{
+
+    int16_t r0;
+    int16_t r1;
+    int16_t r2;
+    int16_t r3;
+    int16_t r4;
+    int16_t r5;
+    int16_t r6;
+    int16_t r7;
+    int16_t r8;
+    int16_t r9;
+    int16_t r10;
+    int16_t r11;
+    int16_t FLAGS;
+    int16_t IR;
+    int16_t SP;
+    int16_t PC;
+
+    // MEMÓRIA
+    uint16_t MEMORIA[TAMANHO_MEMORIA];
+
+}CPU;
 
 int main(){
 
