@@ -44,10 +44,10 @@ typedef struct cpu{
     int16_t R9;
     int16_t R10;
     int16_t R11;
-    int16_t FLAGS;
-    int16_t IR;
-    int16_t SP;
-    int16_t PC;
+    int16_t FLAGS; // Registrador de estado
+    int16_t IR; // Registrador de instrução
+    int16_t SP; // Ponteiro de pilha
+    int16_t PC; // Contador de programa
 
     // MEMÓRIA
     uint16_t MEMORIA[TAMANHO_MEMORIA];
