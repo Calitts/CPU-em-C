@@ -8,26 +8,26 @@
 #define TAMANHO_MEMORIA 16<<10
 
 // Intruções
-#define JMP             (0x0) 
-#define JEQ             (0x1) // Salta quando a flag zero está ativa
-#define JNE             (0x1) // Salta quando a flag zero não está ativa
-#define JLT             (0x1) // Salta quando a flag zero não está ativa e a carry está
-#define JGE             (0x1) // Salta quando a flag carry não está ativa e a zero está
-#define LDR             (0x2)
-#define STR             (0x3)
-#define MOV             (0x4)
-#define ADD             (0x5)
-#define ADDI            (0x6)
-#define SUB             (0x7)
-#define SUBI            (0x8)
-#define AND             (0x9)
-#define OR              (0xA)
-#define SHR             (0xB)
-#define SHL             (0xC)
-#define CMP             (0xD)
-#define PUSH            (0xE)
-#define POP             (0xF)
-#define HALT            (0xF)
+#define JMP             (0x0) // Salto incondicional: PC recebe o endereço alvo
+#define JEQ             (0x1) // Salto se for igual: salta quando a flag zero está ativa
+#define JNE             (0x1) // Salto se for diferente: salta quando a flag zero não está ativa
+#define JLT             (0x1) // Salto se for menor que: salta quando a flag zero não está ativa e a carry está
+#define JGE             (0x1) // Salto se for maior ou igual: salta quando a flag carry não está ativa e a zero está
+#define LDR             (0x2) // Load Register: Carrega dado da memória para um registrador
+#define STR             (0x3) // Store Register: Salva dado de um registrador na memória
+#define MOV             (0x4) // Move: Copia o valor de um registrador para outro
+#define ADD             (0x5) // Soma: Rd = Rn + Rm
+#define ADDI            (0x6) // Soma Imediata: Rd = Rn + ValorConstante
+#define SUB             (0x7) // Subtração: Rd = Rn - Rm
+#define SUBI            (0x8) // Subtração Imediata: Rd = Rn - ValorConstante
+#define AND             (0x9) // E Lógico: Operação bit a bit entre dois registradores
+#define OR              (0xA) // OU Lógico: Operação bit a bit entre dois registradores
+#define SHR             (0xB) // Shift Right: Desloca os bits para a direita (divide por 2)
+#define SHL             (0xC) // Shift Left: Desloca os bits para a esquerda (multiplica por 2)
+#define CMP             (0xD) // Compare: Subtrai valores apenas para atualizar as Flags (Z e C)
+#define PUSH            (0xE) // Empilhar: Coloca o valor do registrador no topo da pilha
+#define POP             (0xF) // Desempilhar: Remove o valor do topo da pilha para um registrador
+#define HALT            (0xF) // Parar: Interrompe a execução do processador
 
 // Definição de registradores e memória
 typedef struct cpu{
