@@ -8,11 +8,11 @@
 #define TAMANHO_MEMORIA 16<<10
 
 // Intruções
-#define JMP_I           (0x0)
-#define JEQ_I           (0x1)
-#define JNE_I           (0x1)
-#define JLT_I           (0x1)
-#define JGE_I           (0x1)
+#define JMP             (0x0)
+#define JEQ             (0x1)
+#define JNE             (0x1)
+#define JLT             (0x1)
+#define JGE             (0x1)
 #define LDR             (0x2)
 #define STR             (0x3)
 #define MOV             (0x4)
@@ -32,18 +32,18 @@
 // Definição de registradores e memória
 typedef struct cpu{
 
-    int16_t r0;
-    int16_t r1;
-    int16_t r2;
-    int16_t r3;
-    int16_t r4;
-    int16_t r5;
-    int16_t r6;
-    int16_t r7;
-    int16_t r8;
-    int16_t r9;
-    int16_t r10;
-    int16_t r11;
+    int16_t R0;
+    int16_t R1;
+    int16_t R2;
+    int16_t R3;
+    int16_t R4;
+    int16_t R5;
+    int16_t R6;
+    int16_t R7;
+    int16_t R8;
+    int16_t R9;
+    int16_t R10;
+    int16_t R11;
     int16_t FLAGS;
     int16_t IR;
     int16_t SP;
