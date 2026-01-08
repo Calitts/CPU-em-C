@@ -8,11 +8,11 @@
 #define TAMANHO_MEMORIA 16<<10
 
 // Intruções
-#define JMP             (0x0)
-#define JEQ             (0x1)
-#define JNE             (0x1)
-#define JLT             (0x1)
-#define JGE             (0x1)
+#define JMP             (0x0) 
+#define JEQ             (0x1) // Salta quando a flag zero está ativa
+#define JNE             (0x1) // Salta quando a flag zero não está ativa
+#define JLT             (0x1) // Salta quando a flag zero não está ativa e a carry está
+#define JGE             (0x1) // Salta quando a flag carry não está ativa e a zero está
 #define LDR             (0x2)
 #define STR             (0x3)
 #define MOV             (0x4)
@@ -54,9 +54,86 @@ typedef struct cpu{
 
 }CPU;
 
-int main(){
+// Executa e lê da memória
+void memoria_leitura(CPU* computador) {
+    
+}
 
+// Executa e escreve na memória
+void memoria_escrita(CPU* computador, bool modificar_endereco) {
+   
+}
 
+// Lê inteiro do usuario 
+void io_leitura(CPU* computador) {
+    
+}
+
+// Imprime inteiro do usuario 
+void io_escrita(CPU* computador) {
+    
+}
+
+int main(int argc, char* argv[]){
+    // Checa argumentos
+    if (argc < 2) {
+        printf("Programa precisa de pelo menos 1 argumento.\n");
+        return 1;
+    }
+    // Abre o arquivo
+    char* arquivo = argv[1];
+    FILE* arquivo_entrada = fopen(arquivo, "r");
+    if (!arquivo_entrada) {
+        printf("Erro abrindo %s!\n", arquivo);
+        return 1;
+    }
+
+    // Define breakpoints 
+    bool breakpoints[TAMANHO_MEMORIA] = { false };
+    for (int i = 2; i < argc; i++) {
+        int endereco = strtol(argv[i], NULL, 16);
+        breakpoints[endereco] = true;
+    }
+
+    // Inicia registradores com zero 
+    CPU computador = { 0 };
+
+    // Zera a memoria 
+    memset(&computador.MEMORIA, 0x0000, TAMANHO_MEMORIA);
+
+    // Enche a memoria 
+    uint16_t endereco, buffer;
+    while (fscanf(arquivo_entrada, "%hX %hX%*[^\n]", &endereco, &buffer) == 2) {
+        computador.MEMORIA[endereco] = buffer;
+    }
+
+    // Processador rodando
+    bool computador_halt = false;
+    do {
+        // PC antes de modificações
+        uint16_t original_pc = computador.PC;
+
+        // Ciclo de leitura
+       
+
+        // Ciclo de decodificação
+       
+
+        // Executa ciclo
+        switch (computador.IR) {
+            
+        }
+
+        // Ciclo do Breakpoint 
+        if (breakpoints[original_pc]) {
+        // if (1) {
+            printf("<== Registradores ==>\n");
+            printf("PC = 0x%04hX\n", original_pc);
+            printf("PC+ = 0x%04hX\n", computador.PC);
+            printf("IR = 0x%04hX\n", computador.IR);
+        }
+
+    } while (!computador_halt);
 
     return 0;
 }
