@@ -4,15 +4,22 @@
 #include <string.h>
 #include <stdbool.h>
 
-//  Tamanho de memoria (16KB) 
-#define TAMANHO_MEMORIA 16<<10
+#pragma region DEFINES
+
+//  Tamanho de memoria (8KiB)  / SP em 0x2000
+#define TAMANHO_MEMORIA 0x2000
+#define INICIO_STACK 0x2000 - 1
+
+// Constantes
+bool computador_halt = false;
 
 // Intruções
 #define JMP             (0x0) // Salto incondicional: PC recebe o endereço alvo
-#define JEQ             (0x1) // Salto se for igual: salta quando a flag zero está ativa
+#define JMPC            (0x1)
+#define JEQ             (0x0) // Salto se for igual: salta quando a flag zero está ativa
 #define JNE             (0x1) // Salto se for diferente: salta quando a flag zero não está ativa
-#define JLT             (0x1) // Salto se for menor que: salta quando a flag zero não está ativa e a carry está
-#define JGE             (0x1) // Salto se for maior ou igual: salta quando a flag carry não está ativa e a zero está
+#define JLT             (0x2) // Salto se for menor que: salta quando a flag zero não está ativa e a carry está
+#define JGE             (0x3) // Salto se for maior ou igual: salta quando a flag carry não está ativa e a zero está
 #define LDR             (0x2) // Load Register: Carrega dado da memória para um registrador
 #define STR             (0x3) // Store Register: Salva dado de um registrador na memória
 #define MOV             (0x4) // Move: Copia o valor de um registrador para outro
@@ -29,50 +36,82 @@
 #define POP             (0xF) // Desempilhar: Remove o valor do topo da pilha para um registrador
 #define HALT            (0xF) // Parar: Interrompe a execução do processador
 
+// Ajudantes
+
+#define ZERO 1
+#define CARRY 0
+
+#pragma endregion
+
+#pragma region TYPES
+
 // Definição de registradores e memória
 typedef struct cpu{
 
-    int16_t R0;
-    int16_t R1;
-    int16_t R2;
-    int16_t R3;
-    int16_t R4;
-    int16_t R5;
-    int16_t R6;
-    int16_t R7;
-    int16_t R8;
-    int16_t R9;
-    int16_t R10;
-    int16_t R11;
-    int16_t FLAGS; // Registrador de estado
-    int16_t IR; // Registrador de instrução
-    int16_t SP; // Ponteiro de pilha
-    int16_t PC; // Contador de programa
+    uint16_t R[16];
+    uint16_t FLAGS; // Registrador de estado
+    uint16_t IR; // Registrador de instrução
+    uint16_t SP; // Ponteiro de pilha
+    uint16_t PC; // Contador de programa
 
     // MEMÓRIA
     uint16_t MEMORIA[TAMANHO_MEMORIA];
 
 }CPU;
 
+// MBR serve para salvar o valor que vem da intrução, para fácil acesso
+typedef union mbr {
+    int16_t data;
+    struct {
+        int16_t rd : 4;
+        int16_t rm : 4;
+        int16_t rn : 4;
+    };
+
+    struct {
+        int16_t cond : 2;
+        int16_t im_cond : 10;
+    };
+
+    struct {
+        int16_t rd_mov : 4;
+        int16_t im_mov : 8;
+    };
+} MBR;
+
+#pragma endregion
+
+#pragma region METHODS
+
+
+void setZ(CPU* computador) {
+    computador->FLAGS |= (1 << ZERO);
+}
+
+void resetZ(CPU* computador) {
+    computador->FLAGS &= (1 << ZERO);
+}
+
+void setC(CPU* computador) {
+    computador->FLAGS |= (1 << CARRY);
+}
+
+void resetC(CPU* computador) {
+    computador->FLAGS &= ~(1 << CARRY);
+}
+
 // Executa e lê da memória
-void memoria_leitura(CPU* computador) {
-    
+uint16_t memoria_leitura(CPU* computador) {
+    if (computador->MEMORIA[computador->PC] == 0xFFFF) {
+        computador_halt = true;
+        return 0;
+    }
+    computador->IR = computador->MEMORIA[computador->PC] & 0x000F;
+    return computador->MEMORIA[computador->PC] >> 4;
 }
 
-// Executa e escreve na memória
-void memoria_escrita(CPU* computador, bool modificar_endereco) {
-   
-}
-
-// Lê inteiro do usuario 
-void io_leitura(CPU* computador) {
-    
-}
-
-// Imprime inteiro do usuario 
-void io_escrita(CPU* computador) {
-    
-}
+#pragma endregion
+#pragma region MAIN
 
 int main(int argc, char* argv[]){
     // Checa argumentos
@@ -82,7 +121,7 @@ int main(int argc, char* argv[]){
     }
     // Abre o arquivo
     char* arquivo = argv[1];
-    FILE* arquivo_entrada = fopen(arquivo, "r");
+    FILE* arquivo_entrada = fopen(arquivo, "rb");
     if (!arquivo_entrada) {
         printf("Erro abrindo %s!\n", arquivo);
         return 1;
@@ -97,9 +136,11 @@ int main(int argc, char* argv[]){
 
     // Inicia registradores com zero 
     CPU computador = { 0 };
+    MBR REG = { 0 };
+    computador.SP = INICIO_STACK;
 
     // Zera a memoria 
-    memset(&computador.MEMORIA, 0x0000, TAMANHO_MEMORIA);
+    memset(&computador.MEMORIA, 0x0000, TAMANHO_MEMORIA * sizeof(uint16_t));
 
     // Enche a memoria 
     uint16_t endereco, buffer;
@@ -107,23 +148,185 @@ int main(int argc, char* argv[]){
         computador.MEMORIA[endereco] = buffer;
     }
 
+    #pragma region LOOP
+
     // Processador rodando
-    bool computador_halt = false;
     do {
         // PC antes de modificações
         uint16_t original_pc = computador.PC;
 
-        // Ciclo de leitura
-       
-
-        // Ciclo de decodificação
-       
+        // Ciclo de leitura e Ciclo de decodificação
+        REG.data = memoria_leitura(&computador);
+        if (computador_halt) {
+            goto end;
+        }
 
         // Executa ciclo
         switch (computador.IR) {
-            
+            case JMP:
+                computador.PC += REG.data;
+            break;
+            case JMPC:
+                bool pass = false;
+                switch (REG.cond) {
+                case JEQ:
+                    if (computador.FLAGS & (1 << ZERO)) {
+                        pass = true;
+                    }
+                break;
+                case JNE:
+                    if (~(computador.FLAGS & (1 << ZERO))) {
+                        pass = true;
+                    }
+                break;
+                case JLT:
+                    if (~(computador.FLAGS & (1 << ZERO)) && (computador.FLAGS & (1 << CARRY))) {
+                        pass = true;
+                    }
+                break;
+                case JGE:
+                    if ((computador.FLAGS & (1 << ZERO)) && ~(computador.FLAGS & (1 << CARRY))) {
+                        pass = true;
+                    }
+                break;
+                }
+                if (pass) {
+                    computador.PC += REG.im_cond;
+                } 
+            break;
+            case LDR:
+            bool io = false;
+            char temp;
+            if (computador.R[REG.rm] + REG.rn == 0xF000 || computador.R[REG.rm] + REG.rn == 0xF002) {
+                    scanf("ENTRADA CHAR: %c\n", &temp);
+                    io = true;
+                }
+                // else if (computador.R[REG.rm] + REG.rn == 0xF002) {
+                //     scanf("ENTRADA INT: %c\n", &temp);
+                //     io = true;
+                // }
+                if (io) {
+                    computador.R[REG.rd] = temp;
+                    break;
+                }
+
+                computador.R[REG.rd] = computador.MEMORIA[computador.R[REG.rm] + REG.rn];
+            break;
+            case STR:
+                if (computador.R[REG.rm] + REG.rd == 0xF001) {
+                    printf("SAIDA CHAR: %c\n", computador.MEMORIA[computador.R[REG.rm] + REG.rd]);
+                    
+                }
+                else if (computador.R[REG.rm] + REG.rd == 0xF003) {
+                    printf("SAIDA INT: %d\n", computador.MEMORIA[computador.R[REG.rm] + REG.rd]);
+                }
+        
+                computador.MEMORIA[computador.R[REG.rm] + REG.rd] = computador.R[REG.rn];
+            break;
+            case MOV:
+                computador.R[REG.rd_mov] = REG.im_mov;
+            break;
+            case ADD:
+                computador.R[REG.rd] = computador.R[REG.rm] + computador.R[REG.rn];
+                if (computador.R[REG.rd] == 0) {
+                    setZ(&computador);
+                } else {
+                    resetZ(&computador);
+                }
+                if ((computador.R[REG.rm] & (1 >> 15)) && (computador.R[REG.rn] & (1 >> 15))) {
+                    
+                }
+                
+                break;
+            case ADDI:
+                computador.R[REG.rd] = computador.R[REG.rm] + REG.rn;
+                if (computador.R[REG.rd] == 0) {
+                    setZ(&computador);
+                }
+                else {
+                    resetZ(&computador);
+                }
+                break;
+            case SUB:
+                computador.R[REG.rd] = computador.R[REG.rm] - computador.R[REG.rn];
+                if (computador.R[REG.rd] == 0) {
+                    setZ(&computador);
+                }
+                else {
+                    resetZ(&computador);
+                }
+                break;
+            case SUBI:
+                computador.R[REG.rd] = computador.R[REG.rm] - REG.rn;
+                if (computador.R[REG.rd] == 0) {
+                    setZ(&computador);
+                }
+                else {
+                    resetZ(&computador);
+                }
+                break;
+            case AND:
+                computador.R[REG.rd] = computador.R[REG.rm] & computador.R[REG.rn];
+                if (computador.R[REG.rd] == 0) {
+                    setZ(&computador);
+                }
+                else {
+                    resetZ(&computador);
+                }
+                break;
+            case OR:
+                computador.R[REG.rd] = computador.R[REG.rm] | computador.R[REG.rn];
+                if (computador.R[REG.rd] == 0) {
+                    setZ(&computador);
+                }
+                else {
+                    resetZ(&computador);
+                }
+                break;
+            case SHR:
+                computador.R[REG.rd] = computador.R[REG.rm] >> REG.rn;
+                if (computador.R[REG.rd] == 0) {
+                    setZ(&computador);
+                }
+                else {
+                    resetZ(&computador);
+                }
+                break;
+            case SHL:
+                computador.R[REG.rd] = computador.R[REG.rm] << computador.R[REG.rn];
+                if (computador.R[REG.rd] == 0) {
+                    setZ(&computador);
+                }
+                else {
+                    resetZ(&computador);
+                }
+                break;
+            case CMP:
+                if (computador.R[REG.rm] == computador.R[REG.rn]) {
+                    setZ(&computador);
+                }
+                else {
+                    resetZ(&computador);
+                }
+
+                if (computador.R[REG.rm] < computador.R[REG.rn]) {
+                    setC(&computador);
+                } else {
+                    resetC(&computador);
+                }
+                
+                break;
+            case PUSH:
+                computador.MEMORIA[computador.SP] = computador.R[REG.rn];
+                computador.SP--;
+            break;
+            case POP:
+                computador.R[REG.rd] = computador.MEMORIA[computador.SP];
+                computador.SP++;
+            break;
         }
 
+        end:
         // Ciclo do Breakpoint 
         if (breakpoints[original_pc]) {
         // if (1) {
@@ -134,6 +337,8 @@ int main(int argc, char* argv[]){
         }
 
     } while (!computador_halt);
-
+    #pragma endregion
+    
     return 0;
 }
+#pragma endregion
