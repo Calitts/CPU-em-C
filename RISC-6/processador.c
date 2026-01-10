@@ -334,6 +334,13 @@ int main(int argc, char* argv[]){
             printf("PC = 0x%04hX\n", original_pc);
             printf("PC+ = 0x%04hX\n", computador.PC);
             printf("IR = 0x%04hX\n", computador.IR);
+            printf("FLAGS = 0x%04hX\n", computador.FLAGS);
+            printf("SP = 0x%04hX\n", computador.SP);
+            int i;
+            while(i < 16){
+                printf("R%d = 0x%04hX\n", i, computador.R[i]);
+                i++;
+            }
         }
 
     } while (!computador_halt);
