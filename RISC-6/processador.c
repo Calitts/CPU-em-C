@@ -46,13 +46,13 @@ bool computador_halt = false;
 #pragma region TYPES
 
 // Definição de registradores e memória
-typedef struct cpu{
+typedef struct cpu {
 
-    uint16_t R[16];
-    uint16_t FLAGS; // Registrador de estado
-    uint16_t IR; // Registrador de instrução
+    uint16_t R[14];
     uint16_t SP; // Ponteiro de pilha
     uint16_t PC; // Contador de programa
+    uint16_t IR; // Registrador de instrução
+    uint16_t FLAGS; // Registrador de estado
 
     // MEMÓRIA
     uint16_t MEMORIA[TAMANHO_MEMORIA];
@@ -113,7 +113,7 @@ uint16_t memoria_leitura(CPU* computador) {
 #pragma endregion
 #pragma region MAIN
 
-int main(int argc, char* argv[]){
+int main(int argc, char* argv[]) {
     // Checa argumentos
     if (argc < 2) {
         printf("Programa precisa de pelo menos 1 argumento.\n");
@@ -121,7 +121,7 @@ int main(int argc, char* argv[]){
     }
     // Abre o arquivo
     char* arquivo = argv[1];
-    FILE* arquivo_entrada = fopen(arquivo, "rb");
+    FILE* arquivo_entrada = fopen(arquivo, "r");
     if (!arquivo_entrada) {
         printf("Erro abrindo %s!\n", arquivo);
         return 1;
@@ -146,14 +146,12 @@ int main(int argc, char* argv[]){
     uint16_t endereco, buffer;
     while (fscanf(arquivo_entrada, "%hX %hX%*[^\n]", &endereco, &buffer) == 2) {
         computador.MEMORIA[endereco] = buffer;
+        // printf("%04hX\n", computador.MEMORIA[endereco]);
     }
 
-    #pragma region LOOP
 
     // Processador rodando
     do {
-        // PC antes de modificações
-        uint16_t original_pc = computador.PC;
 
         // Ciclo de leitura e Ciclo de decodificação
         REG.data = memoria_leitura(&computador);
@@ -161,184 +159,195 @@ int main(int argc, char* argv[]){
             goto end;
         }
 
+#pragma region CYCLE
         // Executa ciclo
         switch (computador.IR) {
-            case JMP:
-                computador.PC += REG.data;
+        case JMP:
+            computador.PC += REG.data;
             break;
-            case JMPC:
-                bool pass = false;
-                switch (REG.cond) {
-                case JEQ:
-                    if (computador.FLAGS & (1 << ZERO)) {
-                        pass = true;
-                    }
-                break;
-                case JNE:
-                    if (~(computador.FLAGS & (1 << ZERO))) {
-                        pass = true;
-                    }
-                break;
-                case JLT:
-                    if (~(computador.FLAGS & (1 << ZERO)) && (computador.FLAGS & (1 << CARRY))) {
-                        pass = true;
-                    }
-                break;
-                case JGE:
-                    if ((computador.FLAGS & (1 << ZERO)) && ~(computador.FLAGS & (1 << CARRY))) {
-                        pass = true;
-                    }
-                break;
+        case JMPC:
+            bool pass = false;
+            switch (REG.cond) {
+            case JEQ:
+                if (computador.FLAGS & (1 << ZERO)) {
+                    pass = true;
                 }
-                if (pass) {
-                    computador.PC += REG.im_cond;
-                } 
+                break;
+            case JNE:
+                if (~(computador.FLAGS & (1 << ZERO))) {
+                    pass = true;
+                }
+                break;
+            case JLT:
+                if (~(computador.FLAGS & (1 << ZERO)) && (computador.FLAGS & (1 << CARRY))) {
+                    pass = true;
+                }
+                break;
+            case JGE:
+                if ((computador.FLAGS & (1 << ZERO)) && ~(computador.FLAGS & (1 << CARRY))) {
+                    pass = true;
+                }
+                break;
+            }
+            if (pass) {
+                computador.PC += REG.im_cond;
+            }
             break;
-            case LDR:
+        case LDR:
             bool io = false;
             char temp;
             if (computador.R[REG.rm] + REG.rn == 0xF000 || computador.R[REG.rm] + REG.rn == 0xF002) {
-                    scanf("ENTRADA CHAR: %c\n", &temp);
-                    io = true;
-                }
-                // else if (computador.R[REG.rm] + REG.rn == 0xF002) {
-                //     scanf("ENTRADA INT: %c\n", &temp);
-                //     io = true;
-                // }
-                if (io) {
-                    computador.R[REG.rd] = temp;
-                    break;
-                }
+                scanf("IN => %c\n", &temp);
+                io = true;
+            }
+            // else if (computador.R[REG.rm] + REG.rn == 0xF002) {
+            //     scanf("ENTRADA INT: %c\n", &temp);
+            //     io = true;
+            // }
+            if (io) {
+                computador.R[REG.rd] = temp;
+                break;
+            }
 
-                computador.R[REG.rd] = computador.MEMORIA[computador.R[REG.rm] + REG.rn];
+            computador.R[REG.rd] = computador.MEMORIA[computador.R[REG.rm] + REG.rn];
             break;
-            case STR:
-                if (computador.R[REG.rm] + REG.rd == 0xF001) {
-                    printf("SAIDA CHAR: %c\n", computador.MEMORIA[computador.R[REG.rm] + REG.rd]);
-                    
-                }
-                else if (computador.R[REG.rm] + REG.rd == 0xF003) {
-                    printf("SAIDA INT: %d\n", computador.MEMORIA[computador.R[REG.rm] + REG.rd]);
-                }
-        
-                computador.MEMORIA[computador.R[REG.rm] + REG.rd] = computador.R[REG.rn];
-            break;
-            case MOV:
-                computador.R[REG.rd_mov] = REG.im_mov;
-            break;
-            case ADD:
-                computador.R[REG.rd] = computador.R[REG.rm] + computador.R[REG.rn];
-                if (computador.R[REG.rd] == 0) {
-                    setZ(&computador);
-                } else {
-                    resetZ(&computador);
-                }
-                if ((computador.R[REG.rm] & (1 >> 15)) && (computador.R[REG.rn] & (1 >> 15))) {
-                    
-                }
-                
-                break;
-            case ADDI:
-                computador.R[REG.rd] = computador.R[REG.rm] + REG.rn;
-                if (computador.R[REG.rd] == 0) {
-                    setZ(&computador);
-                }
-                else {
-                    resetZ(&computador);
-                }
-                break;
-            case SUB:
-                computador.R[REG.rd] = computador.R[REG.rm] - computador.R[REG.rn];
-                if (computador.R[REG.rd] == 0) {
-                    setZ(&computador);
-                }
-                else {
-                    resetZ(&computador);
-                }
-                break;
-            case SUBI:
-                computador.R[REG.rd] = computador.R[REG.rm] - REG.rn;
-                if (computador.R[REG.rd] == 0) {
-                    setZ(&computador);
-                }
-                else {
-                    resetZ(&computador);
-                }
-                break;
-            case AND:
-                computador.R[REG.rd] = computador.R[REG.rm] & computador.R[REG.rn];
-                if (computador.R[REG.rd] == 0) {
-                    setZ(&computador);
-                }
-                else {
-                    resetZ(&computador);
-                }
-                break;
-            case OR:
-                computador.R[REG.rd] = computador.R[REG.rm] | computador.R[REG.rn];
-                if (computador.R[REG.rd] == 0) {
-                    setZ(&computador);
-                }
-                else {
-                    resetZ(&computador);
-                }
-                break;
-            case SHR:
-                computador.R[REG.rd] = computador.R[REG.rm] >> REG.rn;
-                if (computador.R[REG.rd] == 0) {
-                    setZ(&computador);
-                }
-                else {
-                    resetZ(&computador);
-                }
-                break;
-            case SHL:
-                computador.R[REG.rd] = computador.R[REG.rm] << computador.R[REG.rn];
-                if (computador.R[REG.rd] == 0) {
-                    setZ(&computador);
-                }
-                else {
-                    resetZ(&computador);
-                }
-                break;
-            case CMP:
-                if (computador.R[REG.rm] == computador.R[REG.rn]) {
-                    setZ(&computador);
-                }
-                else {
-                    resetZ(&computador);
-                }
+        case STR:
+            if (computador.R[REG.rm] + REG.rd == 0xF001) {
+                printf("OUT <= %c\n", computador.MEMORIA[computador.R[REG.rm] + REG.rd]);
 
-                if (computador.R[REG.rm] < computador.R[REG.rn]) {
-                    setC(&computador);
-                } else {
-                    resetC(&computador);
-                }
-                
-                break;
-            case PUSH:
-                computador.MEMORIA[computador.SP] = computador.R[REG.rn];
-                computador.SP--;
+            }
+            else if (computador.R[REG.rm] + REG.rd == 0xF003) {
+                printf("OUT <= %d\n", computador.MEMORIA[computador.R[REG.rm] + REG.rd]);
+            }
+
+            computador.MEMORIA[computador.R[REG.rm] + REG.rd] = computador.R[REG.rn];
             break;
-            case POP:
-                computador.R[REG.rd] = computador.MEMORIA[computador.SP];
-                computador.SP++;
+        case MOV:
+            computador.R[REG.rd_mov] = REG.im_mov;
+            break;
+        case ADD:
+            computador.R[REG.rd] = computador.R[REG.rm] + computador.R[REG.rn];
+            if (computador.R[REG.rd] == 0) {
+                setZ(&computador);
+            }
+            else {
+                resetZ(&computador);
+            }
+            if ((computador.R[REG.rm] & (1 >> 15)) && (computador.R[REG.rn] & (1 >> 15))) {
+
+            }
+
+            break;
+        case ADDI:
+            computador.R[REG.rd] = computador.R[REG.rm] + REG.rn;
+            if (computador.R[REG.rd] == 0) {
+                setZ(&computador);
+            }
+            else {
+                resetZ(&computador);
+            }
+            break;
+        case SUB:
+            computador.R[REG.rd] = computador.R[REG.rm] - computador.R[REG.rn];
+            if (computador.R[REG.rd] == 0) {
+                setZ(&computador);
+            }
+            else {
+                resetZ(&computador);
+            }
+            break;
+        case SUBI:
+            computador.R[REG.rd] = computador.R[REG.rm] - REG.rn;
+            if (computador.R[REG.rd] == 0) {
+                setZ(&computador);
+            }
+            else {
+                resetZ(&computador);
+            }
+            break;
+        case AND:
+            computador.R[REG.rd] = computador.R[REG.rm] & computador.R[REG.rn];
+            if (computador.R[REG.rd] == 0) {
+                setZ(&computador);
+            }
+            else {
+                resetZ(&computador);
+            }
+            break;
+        case OR:
+            computador.R[REG.rd] = computador.R[REG.rm] | computador.R[REG.rn];
+            if (computador.R[REG.rd] == 0) {
+                setZ(&computador);
+            }
+            else {
+                resetZ(&computador);
+            }
+            break;
+        case SHR:
+            computador.R[REG.rd] = computador.R[REG.rm] >> REG.rn;
+            if (computador.R[REG.rd] == 0) {
+                setZ(&computador);
+            }
+            else {
+                resetZ(&computador);
+            }
+            break;
+        case SHL:
+            computador.R[REG.rd] = computador.R[REG.rm] << computador.R[REG.rn];
+            if (computador.R[REG.rd] == 0) {
+                setZ(&computador);
+            }
+            else {
+                resetZ(&computador);
+            }
+            break;
+        case CMP:
+            if (computador.R[REG.rm] == computador.R[REG.rn]) {
+                setZ(&computador);
+            }
+            else {
+                resetZ(&computador);
+            }
+
+            if (computador.R[REG.rm] < computador.R[REG.rn]) {
+                setC(&computador);
+            }
+            else {
+                resetC(&computador);
+            }
+
+            break;
+        case PUSH:
+            computador.MEMORIA[computador.SP] = computador.R[REG.rn];
+            computador.SP--;
+            break;
+        case POP:
+            computador.R[REG.rd] = computador.MEMORIA[computador.SP];
+            computador.SP++;
             break;
         }
-
-        end:
+#pragma endregion
         // Ciclo do Breakpoint 
-        if (breakpoints[original_pc]) {
-        // if (1) {
+        // if (breakpoints[computador.PC]) {
+        if (1) {
+        end:
             printf("<== Registradores ==>\n");
-            printf("PC = 0x%04hX\n", original_pc);
-            printf("PC+ = 0x%04hX\n", computador.PC);
+            // printf("PC = 0x%04hX\n", computador.PC);
             printf("IR = 0x%04hX\n", computador.IR);
+            for (int i = 0; i < 14; i++) {
+                printf("R%0d = 0x%04hX\n", i, computador.R[i]);
+            }
+            printf("R14 = 0x%04hX\n", computador.SP);
+            printf("R15 = 0x%04hX\n", computador.PC);
+            printf("Z = %d\n", !!(computador.FLAGS & (1 << ZERO)));
+            printf("C = %d\n", !!(computador.FLAGS & (1 << CARRY)));
         }
+
+        computador.PC++;
 
     } while (!computador_halt);
-    #pragma endregion
-    
+
+
     return 0;
 }
 #pragma endregion
