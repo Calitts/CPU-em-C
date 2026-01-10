@@ -1,2 +1,0 @@
-- Adicionar Comandos de Terminal e suas Funcionalidades
-- Adicionar Comandos do IAS

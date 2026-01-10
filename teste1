@@ -1,9 +1,0 @@
-000 1100 LOAD M( varA )
-001 6101 ADD M( varA )
-002 7102 SUB M( varA )
-003 4103 STOR M( varA )
-004 0000 HALT6 
-100 0015 @ varA7 
-101 0020 @ varB8 
-102 0025 @ varC9 
-103 0000 @ varD
