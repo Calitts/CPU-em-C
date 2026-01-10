@@ -328,8 +328,8 @@ int main(int argc, char* argv[]) {
         }
 #pragma endregion
         // Ciclo do Breakpoint 
-        // if (breakpoints[computador.PC]) {
-        if (1) {
+        if (breakpoints[computador.PC]) {
+        // if (1) {
         end:
             printf("<== Registradores ==>\n");
             // printf("PC = 0x%04hX\n", computador.PC);
