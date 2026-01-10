@@ -7,8 +7,8 @@
 #pragma region DEFINES
 
 //  Tamanho de memoria (8KiB)  / SP em 0x2000
-#define TAMANHO_MEMORIA 0x2000
-#define INICIO_STACK 0x2000 - 1
+#define TAMANHO_MEMORIA 0x2001
+#define INICIO_STACK 0x2000
 
 // Constantes
 bool computador_halt = false;
@@ -61,23 +61,28 @@ typedef struct cpu {
 
 // MBR serve para salvar o valor que vem da intrução, para fácil acesso
 typedef union mbr {
-    int16_t data;
+    uint16_t data;
     struct {
-        int16_t rd : 4;
-        int16_t rm : 4;
-        int16_t rn : 4;
+        uint16_t rn : 4;
+        uint16_t rm : 4;
+        uint16_t rd : 4;
     };
 
     struct {
-        int16_t cond : 2;
         int16_t im_cond : 10;
+        uint16_t cond : 2;
     };
 
     struct {
-        int16_t rd_mov : 4;
         int16_t im_mov : 8;
+        uint16_t rd_mov : 4;
     };
 } MBR;
+
+typedef struct mod_vect {
+    int len;
+    int data[TAMANHO_MEMORIA];
+} MOD_VECT;
 
 #pragma endregion
 
@@ -104,7 +109,6 @@ void resetC(CPU* computador) {
 uint16_t memoria_leitura(CPU* computador) {
     if (computador->MEMORIA[computador->PC] == 0xFFFF) {
         computador_halt = true;
-        return 0;
     }
     computador->IR = computador->MEMORIA[computador->PC] & 0x000F;
     return computador->MEMORIA[computador->PC] >> 4;
@@ -137,6 +141,7 @@ int main(int argc, char* argv[]) {
     // Inicia registradores com zero 
     CPU computador = { 0 };
     MBR REG = { 0 };
+    MOD_VECT mod_mem = { 0 };
     computador.SP = INICIO_STACK;
 
     // Zera a memoria 
@@ -155,9 +160,12 @@ int main(int argc, char* argv[]) {
 
         // Ciclo de leitura e Ciclo de decodificação
         REG.data = memoria_leitura(&computador);
+        printf("%hX %hX %hX %hX\n", REG.rd, REG.rm, REG.rn, computador.IR);
+
         if (computador_halt) {
             goto end;
         }
+
 
 #pragma region CYCLE
         // Executa ciclo
@@ -174,17 +182,17 @@ int main(int argc, char* argv[]) {
                 }
                 break;
             case JNE:
-                if (~(computador.FLAGS & (1 << ZERO))) {
+                if (!(computador.FLAGS & (1 << ZERO))) {
                     pass = true;
                 }
                 break;
             case JLT:
-                if (~(computador.FLAGS & (1 << ZERO)) && (computador.FLAGS & (1 << CARRY))) {
+                if (!(computador.FLAGS & (1 << ZERO)) && (computador.FLAGS & (1 << CARRY))) {
                     pass = true;
                 }
                 break;
             case JGE:
-                if ((computador.FLAGS & (1 << ZERO)) && ~(computador.FLAGS & (1 << CARRY))) {
+                if ((computador.FLAGS & (1 << ZERO)) && !(computador.FLAGS & (1 << CARRY))) {
                     pass = true;
                 }
                 break;
@@ -196,31 +204,45 @@ int main(int argc, char* argv[]) {
         case LDR:
             bool io = false;
             char temp;
-            if (computador.R[REG.rm] + REG.rn == 0xF000 || computador.R[REG.rm] + REG.rn == 0xF002) {
-                scanf("IN => %c\n", &temp);
+            if (computador.R[REG.rm] + REG.rn == 0xF000) {
+                printf("IN => ");
+                scanf("%c", &temp);
+                getchar();
                 io = true;
             }
-            // else if (computador.R[REG.rm] + REG.rn == 0xF002) {
-            //     scanf("ENTRADA INT: %c\n", &temp);
-            //     io = true;
-            // }
+            else if (computador.R[REG.rm] + REG.rn == 0xF002) {
+                printf("IN => ");
+                scanf("%d", (int*)&temp);
+                getchar();
+                io = true;
+            }
             if (io) {
-                computador.R[REG.rd] = temp;
+                computador.R[REG.rd] = (int)temp;
                 break;
             }
 
             computador.R[REG.rd] = computador.MEMORIA[computador.R[REG.rm] + REG.rn];
+
+            mod_mem.data[computador.R[REG.rm] + REG.rn] = 1;
+            mod_mem.len++;
+
             break;
         case STR:
             if (computador.R[REG.rm] + REG.rd == 0xF001) {
-                printf("OUT <= %c\n", computador.MEMORIA[computador.R[REG.rm] + REG.rd]);
+                printf("OUT <= %c\n", computador.R[REG.rn]);
+                break;
 
             }
             else if (computador.R[REG.rm] + REG.rd == 0xF003) {
-                printf("OUT <= %d\n", computador.MEMORIA[computador.R[REG.rm] + REG.rd]);
+                printf("OUT <= %d\n", computador.R[REG.rn]);
+                break;
             }
 
             computador.MEMORIA[computador.R[REG.rm] + REG.rd] = computador.R[REG.rn];
+
+            mod_mem.data[computador.R[REG.rm] + REG.rd] = 1;
+            mod_mem.len++;
+
             break;
         case MOV:
             computador.R[REG.rd_mov] = REG.im_mov;
@@ -293,7 +315,7 @@ int main(int argc, char* argv[]) {
             }
             break;
         case SHL:
-            computador.R[REG.rd] = computador.R[REG.rm] << computador.R[REG.rn];
+            computador.R[REG.rd] = computador.R[REG.rm] << REG.rn;
             if (computador.R[REG.rd] == 0) {
                 setZ(&computador);
             }
@@ -322,25 +344,39 @@ int main(int argc, char* argv[]) {
             computador.SP--;
             break;
         case POP:
-            computador.R[REG.rd] = computador.MEMORIA[computador.SP];
+            computador.R[REG.rd] = computador.MEMORIA[computador.SP + 1];
             computador.SP++;
             break;
         }
 #pragma endregion
+
+
         // Ciclo do Breakpoint 
         if (breakpoints[computador.PC]) {
         // if (1) {
         end:
             printf("<== Registradores ==>\n");
             // printf("PC = 0x%04hX\n", computador.PC);
-            printf("IR = 0x%04hX\n", computador.IR);
+            printf("IR  = 0x%04hX\n", computador.IR);
             for (int i = 0; i < 14; i++) {
-                printf("R%0d = 0x%04hX\n", i, computador.R[i]);
+                printf("R%02d = 0x%04hX\n", i, computador.R[i]);
             }
             printf("R14 = 0x%04hX\n", computador.SP);
-            printf("R15 = 0x%04hX\n", computador.PC);
+            printf("R15 = 0x%04hX\n", computador.PC + 1);
             printf("Z = %d\n", !!(computador.FLAGS & (1 << ZERO)));
             printf("C = %d\n", !!(computador.FLAGS & (1 << CARRY)));
+            if (mod_mem.len) {
+                for (int i = 0; i < TAMANHO_MEMORIA; i++) {
+                    if (mod_mem.data[i]) {
+                        printf("[0x%04hX] = 0x%04hX\n", i, computador.MEMORIA[i]);
+                    }
+                }
+            }
+            if (computador.SP != 0x2000) {
+                for (int i = 0x2000 - 1; i >= computador.SP; i--) {
+                    printf("[0x%04hX] = 0x%04hX\n", i, computador.MEMORIA[i + 1]);
+                }
+            }
         }
 
         computador.PC++;
