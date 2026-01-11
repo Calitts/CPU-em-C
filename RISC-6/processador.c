@@ -160,7 +160,7 @@ int main(int argc, char* argv[]) {
 
         // Ciclo de leitura e Ciclo de decodificação
         REG.data = memoria_leitura(&computador);
-        printf("%hX %hX %hX %hX\n", REG.rd, REG.rm, REG.rn, computador.IR);
+        // printf("%hX %hX %hX %hX\n", REG.rd, REG.rm, REG.rn, computador.IR);
 
         if (computador_halt) {
             goto end;
@@ -355,11 +355,11 @@ int main(int argc, char* argv[]) {
         if (breakpoints[computador.PC]) {
         // if (1) {
         end:
-            printf("<== Registradores ==>\n");
+            // printf("<== Registradores ==>\n");
             // printf("PC = 0x%04hX\n", computador.PC);
-            printf("IR  = 0x%04hX\n", computador.IR);
+            // printf("IR  = 0x%04hX\n", computador.IR);
             for (int i = 0; i < 14; i++) {
-                printf("R%02d = 0x%04hX\n", i, computador.R[i]);
+                printf("R%d = 0x%04hX\n", i, computador.R[i]);
             }
             printf("R14 = 0x%04hX\n", computador.SP);
             printf("R15 = 0x%04hX\n", computador.PC + 1);
