@@ -170,28 +170,28 @@ int main(int argc, char* argv[]) {
 #pragma region CYCLE
         // Executa ciclo
         switch (computador.IR) {
-        case JMP:
+        case JMP:;
             computador.PC += REG.data;
             break;
-        case JMPC:
+        case JMPC:;
             bool pass = false;
             switch (REG.cond) {
-            case JEQ:
+            case JEQ:;
                 if (computador.FLAGS & (1 << ZERO)) {
                     pass = true;
                 }
                 break;
-            case JNE:
+            case JNE:;
                 if (!(computador.FLAGS & (1 << ZERO))) {
                     pass = true;
                 }
                 break;
-            case JLT:
+            case JLT:;
                 if (!(computador.FLAGS & (1 << ZERO)) && (computador.FLAGS & (1 << CARRY))) {
                     pass = true;
                 }
                 break;
-            case JGE:
+            case JGE:;
                 if ((computador.FLAGS & (1 << ZERO)) && !(computador.FLAGS & (1 << CARRY))) {
                     pass = true;
                 }
@@ -201,7 +201,7 @@ int main(int argc, char* argv[]) {
                 computador.PC += REG.im_cond;
             }
             break;
-        case LDR:
+        case LDR:;
             bool io = false;
             char temp;
             if (computador.R[REG.rm] + REG.rn == 0xF000) {
@@ -227,7 +227,7 @@ int main(int argc, char* argv[]) {
             mod_mem.len++;
 
             break;
-        case STR:
+        case STR:;
             if (computador.R[REG.rm] + REG.rd == 0xF001) {
                 printf("OUT <= %c\n", computador.R[REG.rn]);
                 break;
@@ -244,10 +244,10 @@ int main(int argc, char* argv[]) {
             mod_mem.len++;
 
             break;
-        case MOV:
+        case MOV:;
             computador.R[REG.rd_mov] = REG.im_mov;
             break;
-        case ADD:
+        case ADD:;
             computador.R[REG.rd] = computador.R[REG.rm] + computador.R[REG.rn];
             if (computador.R[REG.rd] == 0) {
                 setZ(&computador);
@@ -260,7 +260,7 @@ int main(int argc, char* argv[]) {
             }
 
             break;
-        case ADDI:
+        case ADDI:;
             computador.R[REG.rd] = computador.R[REG.rm] + REG.rn;
             if (computador.R[REG.rd] == 0) {
                 setZ(&computador);
@@ -269,7 +269,7 @@ int main(int argc, char* argv[]) {
                 resetZ(&computador);
             }
             break;
-        case SUB:
+        case SUB:;
             computador.R[REG.rd] = computador.R[REG.rm] - computador.R[REG.rn];
             if (computador.R[REG.rd] == 0) {
                 setZ(&computador);
@@ -278,7 +278,7 @@ int main(int argc, char* argv[]) {
                 resetZ(&computador);
             }
             break;
-        case SUBI:
+        case SUBI:;
             computador.R[REG.rd] = computador.R[REG.rm] - REG.rn;
             if (computador.R[REG.rd] == 0) {
                 setZ(&computador);
@@ -287,7 +287,7 @@ int main(int argc, char* argv[]) {
                 resetZ(&computador);
             }
             break;
-        case AND:
+        case AND:;
             computador.R[REG.rd] = computador.R[REG.rm] & computador.R[REG.rn];
             if (computador.R[REG.rd] == 0) {
                 setZ(&computador);
@@ -296,7 +296,7 @@ int main(int argc, char* argv[]) {
                 resetZ(&computador);
             }
             break;
-        case OR:
+        case OR:;
             computador.R[REG.rd] = computador.R[REG.rm] | computador.R[REG.rn];
             if (computador.R[REG.rd] == 0) {
                 setZ(&computador);
@@ -305,7 +305,7 @@ int main(int argc, char* argv[]) {
                 resetZ(&computador);
             }
             break;
-        case SHR:
+        case SHR:;
             computador.R[REG.rd] = computador.R[REG.rm] >> REG.rn;
             if (computador.R[REG.rd] == 0) {
                 setZ(&computador);
@@ -314,7 +314,7 @@ int main(int argc, char* argv[]) {
                 resetZ(&computador);
             }
             break;
-        case SHL:
+        case SHL:;
             computador.R[REG.rd] = computador.R[REG.rm] << REG.rn;
             if (computador.R[REG.rd] == 0) {
                 setZ(&computador);
@@ -323,7 +323,7 @@ int main(int argc, char* argv[]) {
                 resetZ(&computador);
             }
             break;
-        case CMP:
+        case CMP:;
             if (computador.R[REG.rm] == computador.R[REG.rn]) {
                 setZ(&computador);
             }
@@ -339,7 +339,7 @@ int main(int argc, char* argv[]) {
             }
 
             break;
-        case PUSH:
+        case PUSH:;
             computador.MEMORIA[computador.SP] = computador.R[REG.rn];
             computador.SP--;
             break;
